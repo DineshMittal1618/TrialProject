@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+        <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+        <script src="./js/zip.js"></script>
+        <script src="./js/zip-ext.js"></script>
+        <script src="./js/deflate.js"></script>
+        <script src="./js/JSPrintManager.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/bluebird/3.3.5/bluebird.min.js"></script>
+        <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"></script>
+   
+   
+    </head>
+    <body>
+        <div style="text-align:center">
+            <h1>List of Installed Printers</h1>
+            <hr />
+            <div id="lstPrinters">
+            </div>
+        </div>
+    </body>
+    <script>
+ 
+        var _this = this;
+     
+        //WebSocket settings
+        JSPM.JSPrintManager.auto_reconnect = true;
+        JSPM.JSPrintManager.start();
+        JSPM.JSPrintManager.WS.onStatusChanged = function () {
+            if (jspmWSStatus()) {
+                //get client installed printers
+                JSPM.JSPrintManager.getPrintersInfo().then(function (printersList) {
+                    let clientPrinters = printersList;
+                    let htmlContent = '';
+                    console.log(printersList);
+                    
+                    for (let i = 0; i < clientPrinters.length; i++) {
+                        htmlContent += '<div>' + clientPrinters[i].name +
+                            ' ====>>>> ' + (_this.isVirtualPrinter(clientPrinters[i]) ? '<strong><em><span style="color:red">VIRTUAL PRINTER</span></em></strong>' : '<strong>REAL/PHYSICAL PRINTER</strong>') +
+                            '</div>';
+                    }
+                    $('#lstPrinters').html(htmlContent);
+                });
+            }
+        };
+     
+        //Check JSPM WebSocket status
+        function jspmWSStatus() {
+            if (JSPM.JSPrintManager.websocket_status == JSPM.WSStatus.Open)
+                return true;
+            else if (JSPM.JSPrintManager.websocket_status == JSPM.WSStatus.Closed) {
+                alert('JSPrintManager (JSPM) is not installed or not running! Download JSPM Client App from https://neodynamic.com/downloads/jspm');
+                return false;
+            }
+            else if (JSPM.JSPrintManager.websocket_status == JSPM.WSStatus.BlackListed) {
+                alert('JSPM has blacklisted this website!');
+                return false;
+            }
+        }
+     
+             
+        //Guessing whether a printer is Virtual or real/physical
+        function isVirtualPrinter(clientPrinter) {
+            let printerPort = clientPrinter.port.toLowerCase();
+            //For Windows
+            if (printerPort != "nul" && clientPrinter.BIDIEnabled) return false;
+            //For Unix
+            if (printerPort.indexOf("usb") >= 0 && printerPort.indexOf("?serial=") >= 0) return false;
+                 
+            return true;
+        }
+     
+    </script>
+</html>
